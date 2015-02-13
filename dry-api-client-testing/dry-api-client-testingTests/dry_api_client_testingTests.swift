@@ -55,22 +55,20 @@ class dry_api_client_testingTests: XCTestCase {
         XCTAssert(true, "Pass")
     }
 
+    let apiUrl = "http://localhost:9998/api";
+
     /*
     func testConnect(){
 
         var client = DryApiClient("http://localhost:9998/api");
 
         self.asyncTest({ (done) in
-            client.postRequest("http://localhost:9998/api", "", { (error: DryApiError?, data: NSData?) in
-                XCTAssert(true, "Called back")
-                if let error = error {
-                    self.log("ERROR: \(error)");
+            client.postRequest(apiUrl, "", { (error: DryApiError?, data: NSData?) in
+                XCTAssert(error == nil, "No error received")
+                XCTAssert(data != nil, "Data received")
 
-                }else if let data = data {
-                    if let dataStr = NSString(data: data, encoding: NSUTF8StringEncoding) {
-                        self.log("DATA: \(dataStr)");
-                    }
-                }
+                let dataStr = NSString(data: data!, encoding: NSUTF8StringEncoding) 
+                self.log("testConnect (dataStr): \(dataStr)");
  
                 done();
             });
@@ -80,7 +78,7 @@ class dry_api_client_testingTests: XCTestCase {
 
     /*
     func testCallGood(){
-        var client = DryApiClient("");
+        var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
             client.callSimple("test", { (error: DryApiError?, data: String?) in
@@ -99,9 +97,11 @@ class dry_api_client_testingTests: XCTestCase {
             });
         });
     }
+    */
 
+    /*
     func testCallDoubleBad(){
-        var client = DryApiClient("");
+        var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
             client.callSimple("test", { (error, data0: String?, data1: Int?) in
@@ -128,14 +128,13 @@ class dry_api_client_testingTests: XCTestCase {
     */
 
     func testCallDoubleGood(){
-        var client = DryApiClient("");
+        var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
-            client.call("test", "zero", null, { (error, data0: String?, data1: String?) in
-
+            client.call("test.echo", "zero", null, { (error, data0: String?, data1: String?) in
 
                 if let error = error {
-                    self.log("ERROR: \(error)");
+                    self.log("ERROR: \(error.message)");
                 }
 
                 if(error == nil){
@@ -154,7 +153,7 @@ class dry_api_client_testingTests: XCTestCase {
 
     /*
     func testCallTripleGood(){
-        var client = DryApiClient("");
+        var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
             client.callSimple("test", { (error: DryApiError?, data0: String?, data1: String?, data2: String?) in

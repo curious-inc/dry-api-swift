@@ -20,23 +20,14 @@ public class DryApiError {
 class DryApiClient {
 
     var _endpoint = "";
+    
+    let debug = true;
 
     init(_ endpoint: String){
         _endpoint = endpoint;
     }
 
-    /*
-var usr = "dsdd"
-var pwdCode = "dsds"
-let params:[String: AnyObject] = [
-    "email" : usr,
-    "userPwd" : pwdCode ]
-
-var err: NSError?
-request.HTTPBody = NSJSONSerialization.dataWithJSONObject(params, options: NSJSONWritingOptions.allZeros, error: &err)
-*/
-
-    func postRequest(url: String, _ data: String, _ callback: ((error: DryApiError?, data: NSData?)->())){
+    func postRequest(url: String, _ data: NSData, _ callback: ((error: DryApiError?, data: NSData?)->())){
         var configuration = NSURLSessionConfiguration.defaultSessionConfiguration();
         var session = NSURLSession(configuration: configuration);
 
@@ -44,14 +35,12 @@ request.HTTPBody = NSJSONSerialization.dataWithJSONObject(params, options: NSJSO
 
         let nsurl = NSURL(string: url);
         let request = NSMutableURLRequest(URL: nsurl!);
-        request.HTTPMethod = "POST"
-        request.HTTPBody = data.dataUsingEncoding(NSUTF8StringEncoding);
+        request.HTTPMethod = "POST";
+        request.HTTPBody = data;
 
         let task = session.dataTaskWithRequest(request, { (data, response, error) in
 
-            if(error != nil){
-                return callback(error: DryApiError(error), data: nil);
-            }
+            if(error != nil){ return callback(error: DryApiError(error), data: nil); }
 
             if let response = response as? NSHTTPURLResponse {
                 if response.statusCode != 200 {
@@ -66,32 +55,58 @@ request.HTTPBody = NSJSONSerialization.dataWithJSONObject(params, options: NSJSO
         task.resume()
     }
 
-
-    func parseResponse(data: NSData, callback: ((error: DryApiError?, response: NSDictionary?)->())){
-
-        var result = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.allZeros, error: nil) as? NSDictionary
-        println(result)
+    func postRequest(url: String, _ data: String, _ callback: ((error: DryApiError?, data: NSData?)->())){
+        return postRequest(url, data.dataUsingEncoding(NSUTF8StringEncoding)!, callback);
     }
 
-    let jsonObject: [AnyObject] = [
-     ["name": "John", "age": 21],
-     ["name": "Bob", "age": 35],
-    ]
-     
-    func datafy(value: AnyObject, _ options: NSJSONWritingOptions? = nil) -> NSData?{
-        if NSJSONSerialization.isValidJSONObject(value) {
-            if let data = NSJSONSerialization.dataWithJSONObject(value, options: nil, error: nil) {
-                return data;
-            }
+
+    func responseToArgs(data: NSData?, callback: ((error: DryApiError?, args: [AnyObject?]?)->())){
+
+        var args: [AnyObject?] = [];
+        
+        if(data == nil){ callback(error: DryApiError("no_data", "No data received."), args: nil); }
+
+        let data = data!;
+
+        self.parse(data, { (error, response) in 
+            if(error != nil){ return callback(error: error, args: nil); }
+
+            let response = response!
+
+            println("response: \(response)");
+            args.append("zero");
+            args.append("one");
+            callback(error: nil, args: args);
+            // if let val = result["1"] as? NSNull {
+            //     println("IS NULL: TRUE");
+            // }
+        });
+    }
+
+    func parse(data: NSData, callback: ((error: DryApiError?, response: NSDictionary?)->())){
+        var jsonError: NSError? = nil; 
+        var result = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.allZeros, error: &jsonError) as? NSDictionary
+
+        if(result != nil){ callback(error: nil, response: result); }
+        else{ callback(error: DryApiError(jsonError!), response: nil); }
+    }
+
+    func dataify(value: AnyObject, _ callback: ((error: DryApiError?, response: NSData?)->())){
+        var jsonError: NSError? = nil; 
+        if let data = NSJSONSerialization.dataWithJSONObject(value, options: nil, error: &jsonError) {
+            callback(error: nil, response: data);
+        }else{
+            callback(error: DryApiError(jsonError!), response: nil);
         }
-        return nil
     }
 
     func stringify(value: AnyObject, _ prettyPrinted: Bool = false) -> String {
         var options = prettyPrinted ? NSJSONWritingOptions.PrettyPrinted : nil
-        if let data = datafy(value, options) {
-            if let string = NSString(data: data, encoding: NSUTF8StringEncoding) {
-                return string
+        if NSJSONSerialization.isValidJSONObject(value) {
+            if let data = NSJSONSerialization.dataWithJSONObject(value, options: nil, error: nil) {
+                if let string = NSString(data: data, encoding: NSUTF8StringEncoding) {
+                    return string
+                }
             }
         }
         return ""
@@ -103,11 +118,9 @@ request.HTTPBody = NSJSONSerialization.dataWithJSONObject(params, options: NSJSO
         }else{ return(nil); }
     }
 
-    /*
-    func call<AA, AB, A, B>(methodName: String, _ sendArg0: AA?, _ sendArg1: AB?, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
-        callback(error: nil, arg0: nil, arg1: nil);
-    }
-    */
+    // func call<AA, AB, A, B>(methodName: String, _ sendArg0: AA?, _ sendArg1: AB?, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
+        // callback(error: nil, arg0: nil, arg1: nil);
+    // }
 
     func call<AA: NSObject, AB: NSObject, A, B>(methodName: String, _ sendArg0: AA, _ sendArg1: AB, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
     // func call<AA: AnyObject, AB: AnyObject, A: AnyObject, B: AnyObject>(methodName: String, _ sendArg0: AA?, _ sendArg1: AB?, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
@@ -119,81 +132,54 @@ request.HTTPBody = NSJSONSerialization.dataWithJSONObject(params, options: NSJSO
             "1": sendArg1
         ];
 
-        // if let sendArg0 = sendArg0 as? NSObject {
-            // outgoingMessage.setValue(sendArg0, forKey: "0");
-        // }
 
-        /*
-        if(sendArg1 == nil){  
-            outgoingMessage.setValue(NSNull(), forKey: "1");
-        }else if let sendArg1 = sendArg1 as? NSObject {
-            outgoingMessage.setValue(sendArg1, forKey: "1");
+        if(self.debug){
+            var str = stringify(outgoingMessage, true);
+            println("outgoingMessage str: \(str)");
         }
-        */
 
-        var data = datafy(outgoingMessage);
-        var str = stringify(outgoingMessage, true);
+        self.dataify(outgoingMessage, { (error, data) in 
 
-        println("outgoingMessage obj: \(outgoingMessage)");
-        println("outgoingMessage str: \(str)");
-
-        if let data = data {
-            var result = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.allZeros, error: nil) as Dictionary<String, AnyObject>
-            println("parsed: \(result)");
-            if let val = result["1"] as? NSNull {
-                println("IS NULL: TRUE");
+            if(error != nil){ return callback(error: error, arg0: nil, arg1: nil); }
+            println("outgoingMessage data: \(data)");
+            if let data = data {
+                if let str = NSString(data: data, encoding: NSUTF8StringEncoding) {
+                    println("outgoingMessage data(string): \(str)");
+                }
             }
 
-        }
+            self.postRequest(self._endpoint, data!, { (error, response) in
 
-     
-        callback(error: nil, arg0: nil, arg1: nil);
-        return;
+                if(error != nil){ return callback(error: error, arg0: nil, arg1: nil); }
 
+                self.responseToArgs(response, { (error, oargs) in 
+
+                    if(error != nil){ return callback(error: error, arg0: nil, arg1: nil); }
+        
+                    let args = oargs!;
+
+                    // This is hella touchy. If you define AnyObject? as Any? you segfault the compiler
+                    // This is one of a few segfaults i've had to work around.
+                    let errorOut: ((_ : Int, _ : AnyObject?)->()) = { (i: Int, e: AnyObject?) in
+                        let error: DryApiError? = DryApiError("bad_signature", "Your callback didn't match the request format for arg \(i). value: (\(e))");
+                        callback(error: error, arg0: nil, arg1: nil);
+                    };
+
+                    if(args[0] != nil && ((args[0] as? A) == nil)){
+                        return errorOut(0, args[0]);
+                    }
+
+                    if(args[1] != nil && ((args[1] as? B) == nil)){
+                        return errorOut(1, args[1]); 
+                    }
+
+                    callback(error: nil, arg0: args[0] as A?, arg1: args[1] as B?);
+
+                });
+            });
+        });
     }
-        /*
-        if let sendArg0 = sendArg0 {
-            outgoingMessage.setValue(sendArg0, forKey: "0")
-        }else{
-            outgoingMessage.setValue(NSNull(), forKey: "0")
-        }
 
-        /*
-        if let sendArg1 = sendArg1 as AnyObject {
-            outgoingMessage["1"] = sendArg1;
-        }else{
-            outgoingMessage["1"] = NSNull();
-        }
-        */
-
-        // let array: [AnyObject] = [outgoingMessage];
-
-        // let outgoingString = toJSONData(outgoingMessage);
-        let outgoingString = JSONStringify(outgoingMessage, prettyPrinted: true);
-
-        let incoming: [AnyObject?] = ["zero", "one"];
-
-        println("json: \(outgoingString)");
-
-        let errorOut: ((_ : Int, _ : Any?)->()) = { (index: Int, errorVal: Any?) in
-            let error: DryApiError? = DryApiError("bad_signature", "Your callback didn't match the request format for arg \(index). value: (\(errorVal))");
-            let nA: A? = nil;
-            let nB: B? = nil;
-            callback(error: error, arg0: nA, arg1: nB);
-        }
-
-        if(incoming[0] != nil && ((incoming[0] as? A) == nil)){
-            errorOut(0, incoming[0]); return;
-        }
-
-        if(incoming[1] != nil && ((incoming[1] as? B) == nil)){
-            errorOut(1, incoming[1]); return;
-        }
-
-        callback(error: nil, arg0: incoming[0] as A?, arg1: incoming[1] as B?);
-    }
-    */
-   
     
     func titlesFromJSON(data: NSData) -> [String] {
         var titles = [String]()
