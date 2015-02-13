@@ -128,7 +128,8 @@ class dry_api_client_testingTests: XCTestCase {
         });
     }
     */
-
+    
+    /*
     func testEchoStringAndNull(){
         var client = DryApiClient(apiUrl);
 
@@ -183,7 +184,7 @@ class dry_api_client_testingTests: XCTestCase {
         var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
-            client.call("test.echo", 0, 1, { (error, data0: Int?, data1: Int?) in
+            client.call("test.echo", 0, 10.21, { (error, data0: Int?, data1: Double?) in
 
                 if let error = error {
                     self.log("ERROR: \(error.message)");
@@ -196,13 +197,72 @@ class dry_api_client_testingTests: XCTestCase {
 
                 XCTAssert(error == nil, "error is not nil")
                 XCTAssert(data0 == 0, "data0 is 0")
-                XCTAssert(data1 == 1, "data1 is 1")
+                XCTAssert(data1 == 10.21, "data1 is 10.21")
+
+                done();
+            });
+        });
+    }
+    */
+
+    func testEchoAnArranAndADictionary(){
+        var client = DryApiClient(apiUrl);
+
+        var a = ["zero", "one"];
+        var h = ["zero": 0, "one": 1];
+
+        self.asyncTest({ (done) in
+            client.call("test.echo", a, h, { (error, data0: NSArray?, data1: NSDictionary?) in
+
+                if let error = error {
+                    self.log("ERROR: \(error.message)");
+                }
+
+                if(error == nil){
+                    self.log("data0: \(data0)");
+                    self.log("data1: \(data1)");
+                }
+
+                // let data0 = NSMutableArray(array: data0!);
+                // data0.addObject("hello");
+                // self.log("data0: \(data0)");
+
+                XCTAssert(error == nil, "error is not nil")
+                XCTAssert(data0 == a, "data0 is \(a)")
+                XCTAssert(data1 == h, "data1 is \(h)")
 
                 done();
             });
         });
     }
 
+    /*
+    func testCall00(){
+        var client = DryApiClient(apiUrl);
+
+        self.asyncTest({ (done) in
+            client.call("test.echo", { (error) in
+                XCTAssert(error == nil, "error is not nil")
+                done();
+            });
+        });
+    }
+
+    */
+
+    /*
+    func testCall01(){
+        var client = DryApiClient(apiUrl);
+
+        self.asyncTest({ (done) in
+            client.call("test.echo", { (error, arg0: String?) in
+                XCTAssert(error == nil, "error is nil")
+                XCTAssert(arg0 == nil, "arg0 is nil")
+                done();
+            });
+        });
+    }
+    */
 
     /*
     func testCallTripleGood(){

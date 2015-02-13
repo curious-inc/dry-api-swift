@@ -65,6 +65,12 @@ class DryApiClient {
         task.resume()
     }
 
+    func dataToString(data: NSData) -> String{
+        if let string = NSString(data: data, encoding: NSUTF8StringEncoding) {
+            return(string);
+        }else{ return(""); }
+    }
+
     func postRequest(url: String, _ data: String, _ callback: ((error: DryApiError?, data: NSData?)->())){
         return postRequest(url, data.dataUsingEncoding(NSUTF8StringEncoding)!, callback);
     }
@@ -83,7 +89,10 @@ class DryApiClient {
 
             let response = response!
 
-            if(self.debug){ println("reponse: \(response)"); }
+            if(self.debug){ 
+                println("reponse json: \(response)");
+                println("reponse string: \(self.dataToString(data))");
+            }
 
             if let params = response["params"] as? NSArray {
 
@@ -158,8 +167,33 @@ class DryApiClient {
         // callback(error: nil, arg0: nil, arg1: nil);
     // }
 
+    func logOutgoingMessage(data: NSData?){
+        if let data = data {
+            if let str = NSString(data: data, encoding: NSUTF8StringEncoding) {
+                println("outgoingMessage data(string): \(str)");
+            }
+        }
+    }
+
+    func callEndpointGetArgs(outgoingMessage: NSDictionary, callback: ((error: DryApiError?, args: [AnyObject?]?)->())){
+        self.dataify(outgoingMessage, { (error, data) in 
+            if(error != nil){ return callback(error: error, args: nil); }
+
+            if(self.debug){ self.logOutgoingMessage(data); }
+
+            self.postRequest(self._endpoint, data!, { (error, response) in
+                if(error != nil){ return callback(error: error, args: nil); }
+
+                self.responseToArgs(response, { (error, args) in 
+                    if(error != nil){ return callback(error: error, args: nil); }
+                    else{ callback(error: nil, args: args); }
+                });
+            });
+        });
+    }
+
+
     func call<AA: NSObject, AB: NSObject, A, B>(methodName: String, _ sendArg0: AA, _ sendArg1: AB, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
-    // func call<AA: AnyObject, AB: AnyObject, A: AnyObject, B: AnyObject>(methodName: String, _ sendArg0: AA?, _ sendArg1: AB?, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -168,51 +202,30 @@ class DryApiClient {
             "1": sendArg1
         ];
 
-
-        if(self.debug){
-            var str = stringify(outgoingMessage, true);
-            println("outgoingMessage str: \(str)");
-        }
-
-        self.dataify(outgoingMessage, { (error, data) in 
+        self.callEndpointGetArgs(outgoingMessage, { (error, args) in 
 
             if(error != nil){ return callback(error: error, arg0: nil, arg1: nil); }
-            println("outgoingMessage data: \(data)");
-            if let data = data {
-                if let str = NSString(data: data, encoding: NSUTF8StringEncoding) {
-                    println("outgoingMessage data(string): \(str)");
-                }
+
+            var args = args!;
+
+            // This is hella touchy. If you define AnyObject? as Any? you segfault the compiler
+            // This is one of a few segfaults i've had to work around.
+            let errorOut: ((_ : Int, _ : AnyObject?)->()) = { (i: Int, e: AnyObject?) in
+                let error: DryApiError? = DryApiError("bad_signature", "Your callback didn't match the request format for arg \(i). value: (\(e))");
+                callback(error: error, arg0: nil, arg1: nil);
+            };
+
+            if(args.count <= 0){ args[0] = nil; }
+            if(args[0] != nil && ((args[0] as? A) == nil)){
+                return errorOut(0, args[0]);
             }
 
-            self.postRequest(self._endpoint, data!, { (error, response) in
+            if(args.count <= 1){ args[1] = nil; }
+            if(args[1] != nil && ((args[1] as? B) == nil)){
+                return errorOut(1, args[1]); 
+            }
 
-                if(error != nil){ return callback(error: error, arg0: nil, arg1: nil); }
-
-                self.responseToArgs(response, { (error, oargs) in 
-
-                    if(error != nil){ return callback(error: error, arg0: nil, arg1: nil); }
-        
-                    let args = oargs!;
-
-                    // This is hella touchy. If you define AnyObject? as Any? you segfault the compiler
-                    // This is one of a few segfaults i've had to work around.
-                    let errorOut: ((_ : Int, _ : AnyObject?)->()) = { (i: Int, e: AnyObject?) in
-                        let error: DryApiError? = DryApiError("bad_signature", "Your callback didn't match the request format for arg \(i). value: (\(e))");
-                        callback(error: error, arg0: nil, arg1: nil);
-                    };
-
-                    if(args[0] != nil && ((args[0] as? A) == nil)){
-                        return errorOut(0, args[0]);
-                    }
-
-                    if(args[1] != nil && ((args[1] as? B) == nil)){
-                        return errorOut(1, args[1]); 
-                    }
-
-                    callback(error: nil, arg0: args[0] as A?, arg1: args[1] as B?);
-
-                });
-            });
+            callback(error: nil, arg0: args[0] as A?, arg1: args[1] as B?);
         });
     }
 
