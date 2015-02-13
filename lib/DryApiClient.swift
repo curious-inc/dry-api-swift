@@ -15,6 +15,16 @@ public class DryApiError {
         self.code = "NSError.\(error.code)";
         self.message = error.localizedDescription;
     }
+
+    init(_ error: NSDictionary){
+        if let code = error["code"] as? NSString {
+            self.code = code;
+        }else{ self.code = "no_code"; }
+
+        if let message = error["message"] as? NSString {
+            self.message = message;
+        }else{ self.message = "no_message"; }
+    }
 }
 
 class DryApiClient {
@@ -73,13 +83,39 @@ class DryApiClient {
 
             let response = response!
 
-            println("response: \(response)");
-            args.append("zero");
-            args.append("one");
-            callback(error: nil, args: args);
-            // if let val = result["1"] as? NSNull {
-            //     println("IS NULL: TRUE");
-            // }
+            if(self.debug){ println("reponse: \(response)"); }
+
+            if let params = response["params"] as? NSArray {
+
+                let error:AnyObject? = response["error"];
+
+                if(!(error is NSNull)){
+                    if let error = error as NSDictionary? {
+                        return callback(error: DryApiError(error), args: nil);
+                    }else{
+                        return callback(error: DryApiError("no_code", "object: \(error)"), args: nil);
+                    }
+                }
+
+                for key in params {
+                    if let key = key as? String {
+                        if(key == "error"){ continue; }
+                        if let val = response[key] as? NSNull {
+                            args.append(nil);
+                        }else{
+                            args.append(response[key]);
+                        }
+                    }else{
+                        return callback(error: DryApiError("malformed_response", "Params contained non string. params: \(params)"), args: nil); 
+                    }
+                }
+
+                if(self.debug){ println("processed args: \(args)"); }
+                return callback(error: nil, args: args);
+
+            }else{
+                return callback(error: DryApiError("malformed_response", "Response was missing params."), args: nil); 
+            }
         });
     }
 

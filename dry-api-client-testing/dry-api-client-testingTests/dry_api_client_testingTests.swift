@@ -50,10 +50,12 @@ class dry_api_client_testingTests: XCTestCase {
         super.tearDown()
     }
     
+    /*
     func testExample() {
         // This is an example of a functional test case.
         XCTAssert(true, "Pass")
     }
+    */
 
     let apiUrl = "http://localhost:9998/api";
 
@@ -127,11 +129,37 @@ class dry_api_client_testingTests: XCTestCase {
     }
     */
 
-    func testCallDoubleGood(){
+    func testEchoStringAndNull(){
         var client = DryApiClient(apiUrl);
+
+        println("HERE");
 
         self.asyncTest({ (done) in
             client.call("test.echo", "zero", null, { (error, data0: String?, data1: String?) in
+
+                if let error = error {
+                    self.log("ERROR: \(error.message)");
+                }
+
+                if(error == nil){
+                    self.log("data0: \(data0)");
+                    self.log("data1: \(data1)");
+                }
+
+                XCTAssert(error == nil, "error is not nil")
+                XCTAssert(data0 == "zero", "data0 is zero")
+                XCTAssert(data1 == nil, "data1 is nil")
+
+                done();
+            });
+        });
+    }
+
+    func testEchoTwoStrings(){
+        var client = DryApiClient(apiUrl);
+
+        self.asyncTest({ (done) in
+            client.call("test.echo", "zero", "one", { (error, data0: String?, data1: String?) in
 
                 if let error = error {
                     self.log("ERROR: \(error.message)");
@@ -150,6 +178,31 @@ class dry_api_client_testingTests: XCTestCase {
             });
         });
     }
+
+    func testEchoTwoNumbers(){
+        var client = DryApiClient(apiUrl);
+
+        self.asyncTest({ (done) in
+            client.call("test.echo", 0, 1, { (error, data0: Int?, data1: Int?) in
+
+                if let error = error {
+                    self.log("ERROR: \(error.message)");
+                }
+
+                if(error == nil){
+                    self.log("data0: \(data0)");
+                    self.log("data1: \(data1)");
+                }
+
+                XCTAssert(error == nil, "error is not nil")
+                XCTAssert(data0 == 0, "data0 is 0")
+                XCTAssert(data1 == 1, "data1 is 1")
+
+                done();
+            });
+        });
+    }
+
 
     /*
     func testCallTripleGood(){
@@ -215,11 +268,13 @@ class dry_api_client_testingTests: XCTestCase {
     */
  
     
+    /*
     func testPerformanceExample() {
         // This is an example of a performance test case.
         self.measureBlock() {
             // Put the code you want to measure the time of here.
         }
     }
+    */
     
 }
