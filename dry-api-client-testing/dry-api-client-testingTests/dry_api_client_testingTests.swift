@@ -9,6 +9,7 @@
 import UIKit
 import XCTest
 
+let null = NSNull();
 /*
   XCTestExpectation *documentOpenExpectation = [self expectationWithDescription:@"document open"];
   async{
@@ -77,6 +78,7 @@ class dry_api_client_testingTests: XCTestCase {
     }
     */
 
+    /*
     func testCallGood(){
         var client = DryApiClient("");
 
@@ -123,12 +125,13 @@ class dry_api_client_testingTests: XCTestCase {
             });
         });
     }
+    */
 
     func testCallDoubleGood(){
         var client = DryApiClient("");
 
         self.asyncTest({ (done) in
-            client.callSimple("test", { (error, data0: String?, data1: String?) in
+            client.call("test", "zero", null, { (error, data0: String?, data1: String?) in
 
 
                 if let error = error {
@@ -141,8 +144,8 @@ class dry_api_client_testingTests: XCTestCase {
                 }
 
                 XCTAssert(error == nil, "error is not nil")
-                XCTAssert(data0 == "zero", "data is nil")
-                XCTAssert(data1 == "one", "data is nil")
+                XCTAssert(data0 == "zero", "data0 is zero")
+                XCTAssert(data1 == "one", "data1 is one")
 
                 done();
             });

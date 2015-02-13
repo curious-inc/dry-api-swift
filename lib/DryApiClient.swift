@@ -73,51 +73,28 @@ request.HTTPBody = NSJSONSerialization.dataWithJSONObject(params, options: NSJSO
         println(result)
     }
 
-    /*
-    func call<A>(methodName: String, callback: ((error: DryApiError?, arg: A?) -> ())){
-        var arg1:String? = "arg1";
-
-        if(arg1 is A){
-            var x: NSDictionary? = nil;
-            callback(error: x, arg: arg1 as A);
-        }else if(arg1 == nil){
-            var x: NSDictionary? = nil;
-            callback(error: x, arg: nil);
-        }else{
-            println("Unexpected response, your callback didn't match the parameters returned");
-            var error: NSDictionary? = ["code" : "bad_signature", "message" : "your callback didn't match the request format." ];
-            let n: A? = nil;
-            callback(error: error, arg: n);
+    let jsonObject: [AnyObject] = [
+     ["name": "John", "age": 21],
+     ["name": "Bob", "age": 35],
+    ]
+     
+    func datafy(value: AnyObject, _ options: NSJSONWritingOptions? = nil) -> NSData?{
+        if NSJSONSerialization.isValidJSONObject(value) {
+            if let data = NSJSONSerialization.dataWithJSONObject(value, options: nil, error: nil) {
+                return data;
+            }
         }
+        return nil
     }
-    */
 
-    func callSimple<A>(methodName: String, callback: ((error: DryApiError?, arg0: A?) -> ())){
-        var incoming:[String: AnyObject?] = [
-            "0": "zero",
-            "1": nil
-        ];
-
-        var realArg0: A? = nil;
-        var valid = false;
-
-        if(incoming["0"] == nil){
-            realArg0 = nil;
-            valid = true;
-        }else if let arg = incoming["0"] as? A{
-            realArg0 = arg;
-            valid = true;
+    func stringify(value: AnyObject, _ prettyPrinted: Bool = false) -> String {
+        var options = prettyPrinted ? NSJSONWritingOptions.PrettyPrinted : nil
+        if let data = datafy(value, options) {
+            if let string = NSString(data: data, encoding: NSUTF8StringEncoding) {
+                return string
+            }
         }
-
-        if(!valid){
-            let error: DryApiError? = DryApiError("bad_signature", "Your callback didn't match the request format.");
-            let n: A? = nil;
-            callback(error: error, arg0: n);
-            return;
-        }
-       
-        callback(error: nil, arg0: realArg0);
-      
+        return ""
     }
 
     func getValue(dict: [String: AnyObject?], _ key: String) -> AnyObject? {
@@ -126,11 +103,79 @@ request.HTTPBody = NSJSONSerialization.dataWithJSONObject(params, options: NSJSO
         }else{ return(nil); }
     }
 
+    /*
+    func call<AA, AB, A, B>(methodName: String, _ sendArg0: AA?, _ sendArg1: AB?, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
+        callback(error: nil, arg0: nil, arg1: nil);
+    }
+    */
 
-    func callSimple<A, B>(methodName: String, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
-        var incoming:[AnyObject?] = [ "zero", "one", nil];
+    func call<AA: NSObject, AB: NSObject, A, B>(methodName: String, _ sendArg0: AA, _ sendArg1: AB, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
+    // func call<AA: AnyObject, AB: AnyObject, A: AnyObject, B: AnyObject>(methodName: String, _ sendArg0: AA?, _ sendArg1: AB?, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
+        var outgoingMessage: NSMutableDictionary = [
+            "id": NSUUID().UUIDString,
+            "method": methodName,
+            "params": ["0", "1"],
+            "0": sendArg0,
+            "1": sendArg1
+        ];
 
-        let errorOut: ((_ : Int, _ : AnyObject?)->()) = { (index: Int, errorVal: AnyObject?) in
+        // if let sendArg0 = sendArg0 as? NSObject {
+            // outgoingMessage.setValue(sendArg0, forKey: "0");
+        // }
+
+        /*
+        if(sendArg1 == nil){  
+            outgoingMessage.setValue(NSNull(), forKey: "1");
+        }else if let sendArg1 = sendArg1 as? NSObject {
+            outgoingMessage.setValue(sendArg1, forKey: "1");
+        }
+        */
+
+        var data = datafy(outgoingMessage);
+        var str = stringify(outgoingMessage, true);
+
+        println("outgoingMessage obj: \(outgoingMessage)");
+        println("outgoingMessage str: \(str)");
+
+        if let data = data {
+            var result = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.allZeros, error: nil) as Dictionary<String, AnyObject>
+            println("parsed: \(result)");
+            if let val = result["1"] as? NSNull {
+                println("IS NULL: TRUE");
+            }
+
+        }
+
+     
+        callback(error: nil, arg0: nil, arg1: nil);
+        return;
+
+    }
+        /*
+        if let sendArg0 = sendArg0 {
+            outgoingMessage.setValue(sendArg0, forKey: "0")
+        }else{
+            outgoingMessage.setValue(NSNull(), forKey: "0")
+        }
+
+        /*
+        if let sendArg1 = sendArg1 as AnyObject {
+            outgoingMessage["1"] = sendArg1;
+        }else{
+            outgoingMessage["1"] = NSNull();
+        }
+        */
+
+        // let array: [AnyObject] = [outgoingMessage];
+
+        // let outgoingString = toJSONData(outgoingMessage);
+        let outgoingString = JSONStringify(outgoingMessage, prettyPrinted: true);
+
+        let incoming: [AnyObject?] = ["zero", "one"];
+
+        println("json: \(outgoingString)");
+
+        let errorOut: ((_ : Int, _ : Any?)->()) = { (index: Int, errorVal: Any?) in
             let error: DryApiError? = DryApiError("bad_signature", "Your callback didn't match the request format for arg \(index). value: (\(errorVal))");
             let nA: A? = nil;
             let nB: B? = nil;
@@ -147,109 +192,9 @@ request.HTTPBody = NSJSONSerialization.dataWithJSONObject(params, options: NSJSO
 
         callback(error: nil, arg0: incoming[0] as A?, arg1: incoming[1] as B?);
     }
+    */
    
-    /*
-    func callSimple<A, B>(methodName: String, callback: ((error: DryApiError?, arg0: A?, arg1: B?) -> ())){
-        var incoming:[String: AnyObject?] = [
-            "0": "zero",
-            "1": nil
-        ];
-
-        let errorOut: ((_ : Int, _ : AnyObject?)->()) = { (index: Int, errorVal: AnyObject?) in
-            let error: DryApiError? = DryApiError("bad_signature", "Your callback didn't match the request format for arg \(index). value: (\(errorVal))");
-            let nA: A? = nil;
-            let nB: B? = nil;
-            callback(error: error, arg0: nA, arg1: nB);
-        }
-
-        var val0: A? = nil;
-        var val0Valid = false;
-
-        if(incoming["0"] == nil){
-            val0 = nil;
-            val0Valid = true;
-        }else if let arg = incoming["0"] as? A{
-            val0 = arg;
-            val0Valid = true;
-        }
-
-        if(!val0Valid){
-            errorOut(0, getValue(incoming, "0"));
-            return;
-        }
-
-        var val1: B? = nil;
-        var val1Valid = false;
-
-        if(incoming["1"] == nil){
-            val1 = nil;
-            val1Valid = true;
-        }else if let arg = incoming["1"] as? B{
-            val1 = arg;
-            val1Valid = true;
-        }
-
-        if(val1Valid){
-            errorOut(1, getValue(incoming, "1"));
-            return;
-        }
-       
-        callback(error: nil, arg0: val0, arg1: val1);
-    }
-    */
-
-    /*
-    func callSimple<A, B, C>(methodName: String, callback: ((error: DryApiError?, arg0: A?, arg1: B?, arg2: C?) -> ())){
-        var incoming:[String: AnyObject?] = [
-            "0": "zero",
-            "1": nil
-        ];
-
-        var val0: A? = nil;
-        var val0Valid = false;
-
-        if(incoming["0"] == nil){
-            val0 = nil;
-            val0Valid = true;
-        }else if let arg = incoming["0"] as? A{
-            val0 = arg;
-            val0Valid = true;
-        }
-
-        if(!val0Valid){
-            let x = incoming["0"];
-            let error: DryApiError? = DryApiError("bad_signature", "Your callback didn't match the request format for arg 0. value: (\(x))");
-            let nA: A? = nil;
-            let nB: B? = nil;
-            callback(error: error, arg0: nA, arg1: nB);
-            return;
-        }
-
-        var val1: B? = nil;
-        var val1Valid = false;
-
-        if(incoming["1"] == nil){
-            val1 = nil;
-            val1Valid = true;
-        }else if let arg = incoming["1"] as? B{
-            val1 = arg;
-            val1Valid = true;
-        }
-
-        if(val1Valid){
-            let x = incoming["1"];
-            let error: DryApiError? = DryApiError("bad_signature", "Your callback didn't match the request format for arg 1. value: (\(x))");
-            let nA: A? = nil;
-            let nB: B? = nil;
-            callback(error: error, arg0: nA, arg1: nB);
-            return;
-        }
-       
-        callback(error: nil, arg0: val0, arg1: val1);
-    }
-    */
-
-
+    
     func titlesFromJSON(data: NSData) -> [String] {
         var titles = [String]()
         var jsonError: NSError?
