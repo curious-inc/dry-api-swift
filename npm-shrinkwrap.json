@@ -1,0 +1,102 @@
+{
+  "name": "dry-api-swift",
+  "version": "0.0.1",
+  "dependencies": {
+    "dry-underscore": {
+      "version": "0.11.1",
+      "from": "dry-underscore@",
+      "dependencies": {
+        "tamejs": {
+          "version": "0.4.14",
+          "from": "https://registry.npmjs.org/tamejs/-/tamejs-0.4.14.tgz",
+          "resolved": "https://registry.npmjs.org/tamejs/-/tamejs-0.4.14.tgz"
+        },
+        "formidable": {
+          "version": "1.0.9",
+          "from": "formidable@1.0.9",
+          "resolved": "https://registry.npmjs.org/formidable/-/formidable-1.0.9.tgz"
+        },
+        "tosource": {
+          "version": "0.1.1",
+          "from": "https://registry.npmjs.org/tosource/-/tosource-0.1.1.tgz",
+          "resolved": "https://registry.npmjs.org/tosource/-/tosource-0.1.1.tgz"
+        },
+        "minimatch": {
+          "version": "0.2.11",
+          "from": "https://registry.npmjs.org/minimatch/-/minimatch-0.2.11.tgz",
+          "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-0.2.11.tgz",
+          "dependencies": {
+            "lru-cache": {
+              "version": "2.2.2",
+              "from": "https://registry.npmjs.org/lru-cache/-/lru-cache-2.2.2.tgz",
+              "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-2.2.2.tgz"
+            },
+            "sigmund": {
+              "version": "1.0.0",
+              "from": "https://registry.npmjs.org/sigmund/-/sigmund-1.0.0.tgz",
+              "resolved": "https://registry.npmjs.org/sigmund/-/sigmund-1.0.0.tgz"
+            }
+          }
+        },
+        "moment": {
+          "version": "2.5.1",
+          "from": "https://registry.npmjs.org/moment/-/moment-2.5.1.tgz",
+          "resolved": "https://registry.npmjs.org/moment/-/moment-2.5.1.tgz"
+        },
+        "handlebars": {
+          "version": "2.0.0",
+          "from": "https://registry.npmjs.org/handlebars/-/handlebars-2.0.0.tgz",
+          "resolved": "https://registry.npmjs.org/handlebars/-/handlebars-2.0.0.tgz",
+          "dependencies": {
+            "optimist": {
+              "version": "0.3.7",
+              "from": "https://registry.npmjs.org/optimist/-/optimist-0.3.7.tgz",
+              "resolved": "https://registry.npmjs.org/optimist/-/optimist-0.3.7.tgz",
+              "dependencies": {
+                "wordwrap": {
+                  "version": "0.0.2",
+                  "from": "https://registry.npmjs.org/wordwrap/-/wordwrap-0.0.2.tgz",
+                  "resolved": "https://registry.npmjs.org/wordwrap/-/wordwrap-0.0.2.tgz"
+                }
+              }
+            },
+            "uglify-js": {
+              "version": "2.3.6",
+              "from": "https://registry.npmjs.org/uglify-js/-/uglify-js-2.3.6.tgz",
+              "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-2.3.6.tgz",
+              "dependencies": {
+                "async": {
+                  "version": "0.2.10",
+                  "from": "https://registry.npmjs.org/async/-/async-0.2.10.tgz",
+                  "resolved": "https://registry.npmjs.org/async/-/async-0.2.10.tgz"
+                },
+                "source-map": {
+                  "version": "0.1.39",
+                  "from": "https://registry.npmjs.org/source-map/-/source-map-0.1.39.tgz",
+                  "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.1.39.tgz",
+                  "dependencies": {
+                    "amdefine": {
+                      "version": "0.1.0",
+                      "from": "https://registry.npmjs.org/amdefine/-/amdefine-0.1.0.tgz",
+                      "resolved": "https://registry.npmjs.org/amdefine/-/amdefine-0.1.0.tgz"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "keypress": {
+          "version": "0.2.1",
+          "from": "https://registry.npmjs.org/keypress/-/keypress-0.2.1.tgz",
+          "resolved": "https://registry.npmjs.org/keypress/-/keypress-0.2.1.tgz"
+        },
+        "mime": {
+          "version": "1.2.5",
+          "from": "mime@1.2.5",
+          "resolved": "https://registry.npmjs.org/mime/-/mime-1.2.5.tgz"
+        }
+      }
+    }
+  }
+}

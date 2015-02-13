@@ -1,0 +1,27 @@
+{
+    "name":"dry-api-swift",
+    "version":"0.0.1",
+    "description": "dry-api swift client",
+    "author": {
+        "name": "Kendrick Taylor",
+        "email": "kendick@suoiruc.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/curious-inc/dry-api-swift.git"
+    },
+    "directories": {
+        "lib": "./lib"
+    },
+    "engines": {
+        "node": "0.10.x",
+        "npm": "1"
+    },
+    "main" : "./lib/index.js",
+    "devDependencies": {
+        "dry-api": ""
+    },
+    "dependencies": {
+        "dry-underscore" : ""
+    }
+}
