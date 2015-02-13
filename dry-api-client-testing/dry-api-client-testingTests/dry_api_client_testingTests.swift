@@ -236,6 +236,21 @@ class dry_api_client_testingTests: XCTestCase {
         });
     }
 
+    func testCall_2_3(){
+        var client = DryApiClient(apiUrl);
+
+        self.asyncTest({ (done) in
+            client.call("test.echo", "a", "b", { (error, a: String?, b: String?, c: String?) in
+                XCTAssert(error == nil, "error is nil")
+                XCTAssert(a == "a", "a == a")
+                XCTAssert(b == "b", "b == b")
+                XCTAssert(c == nil, "c == nil")
+                done();
+            });
+        });
+    }
+
+
     /*
     func testCall00(){
         var client = DryApiClient(apiUrl);
