@@ -9,18 +9,6 @@
 import UIKit
 import XCTest
 
-let null = NSNull();
-/*
-  XCTestExpectation *documentOpenExpectation = [self expectationWithDescription:@"document open"];
-  async{
-      assert(true);
-     [documentOpenExpectation fulfill];
-     }
-[self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-        [doc closeWithCompletionHandler:nil];
-    }];
-    */
-
 class dry_api_client_testingTests: XCTestCase {
     
     func asyncTest(method: ((done: ()->())->())) {
@@ -49,105 +37,48 @@ class dry_api_client_testingTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
         super.tearDown()
     }
-    
-    /*
-    func testExample() {
-        // This is an example of a functional test case.
-        XCTAssert(true, "Pass")
-    }
-    */
 
     let apiUrl = "http://localhost:9998/api";
 
-    /*
-    func testConnect(){
+    func testServer(){
 
         var client = DryApiClient("http://localhost:9998/api");
 
         self.asyncTest({ (done) in
-            client.postRequest(apiUrl, "", { (error: DryApiError?, data: NSData?) in
+            client.postRequest(self.apiUrl, "", { (error: DryApiError?, data: NSData?) in
                 XCTAssert(error == nil, "No error received")
                 XCTAssert(data != nil, "Data received")
 
-                let dataStr = NSString(data: data!, encoding: NSUTF8StringEncoding) 
-                self.log("testConnect (dataStr): \(dataStr)");
- 
-                done();
-            });
-        });
-    }
-    */
-
-    /*
-    func testCallGood(){
-        var client = DryApiClient(apiUrl);
-
-        self.asyncTest({ (done) in
-            client.callSimple("test", { (error: DryApiError?, data: String?) in
-
-                XCTAssert(error == nil, "error is nil")
-                XCTAssert(data != nil, "data is not nil")
-
-                if let error = error {
-                    self.log("ERROR: \(error)");
-                }
-
-                if(data != nil){
-                    self.log("Data: \(data)");
-                }
-                done();
-            });
-        });
-    }
-    */
-
-    /*
-    func testCallDoubleBad(){
-        var client = DryApiClient(apiUrl);
-
-        self.asyncTest({ (done) in
-            client.callSimple("test", { (error, data0: String?, data1: Int?) in
-
-
-                if let error = error {
-                    self.log("ERROR: \(error)");
-                }
-
-
-                if(error == nil){
-                    self.log("data0: \(data0)");
-                    self.log("data1: \(data1)");
-                }
-
-                XCTAssert(error != nil, "error is not nil")
-                XCTAssert(data0 == nil, "data is nil")
-                XCTAssert(data1 == nil, "data is nil")
+                // let dataStr = NSString(data: data!, encoding: NSUTF8StringEncoding) 
+                // self.log("testServer (dataStr): \(dataStr)");
 
                 done();
             });
         });
     }
-    */
-    
-    /*
-    func testEchoStringAndNull(){
+
+    func testEcho_0_2(){
         var client = DryApiClient(apiUrl);
 
-        println("HERE");
-
         self.asyncTest({ (done) in
-            client.call("test.echo", "zero", null, { (error, data0: String?, data1: String?) in
-
-                if let error = error {
-                    self.log("ERROR: \(error.message)");
-                }
-
-                if(error == nil){
-                    self.log("data0: \(data0)");
-                    self.log("data1: \(data1)");
-                }
+            client.call("test.echo", { (error, data0: String?, data1: String?) in
 
                 XCTAssert(error == nil, "error is not nil")
+                XCTAssert(data0 == nil, "data0 is nil")
+                XCTAssert(data1 == nil, "data1 is nil")
+
+                done();
+            });
+        });
+    }
+    
+    func testEcho_2_2_String_Null(){
+        var client = DryApiClient(apiUrl);
+
+        self.asyncTest({ (done) in
+            client.call("test.echo", "zero", client.null, { (error, data0: String?, data1: String?) in
+
+                XCTAssert(error == nil, "error is nil")
                 XCTAssert(data0 == "zero", "data0 is zero")
                 XCTAssert(data1 == nil, "data1 is nil")
 
@@ -156,22 +87,13 @@ class dry_api_client_testingTests: XCTestCase {
         });
     }
 
-    func testEchoTwoStrings(){
+    func testEcho_2_2_String_String(){
         var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
             client.call("test.echo", "zero", "one", { (error, data0: String?, data1: String?) in
 
-                if let error = error {
-                    self.log("ERROR: \(error.message)");
-                }
-
-                if(error == nil){
-                    self.log("data0: \(data0)");
-                    self.log("data1: \(data1)");
-                }
-
-                XCTAssert(error == nil, "error is not nil")
+                XCTAssert(error == nil, "error is nil")
                 XCTAssert(data0 == "zero", "data0 is zero")
                 XCTAssert(data1 == "one", "data1 is one")
 
@@ -180,22 +102,13 @@ class dry_api_client_testingTests: XCTestCase {
         });
     }
 
-    func testEchoTwoNumbers(){
+    func testEcho_2_2_Int_Double(){
         var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
             client.call("test.echo", 0, 10.21, { (error, data0: Int?, data1: Double?) in
 
-                if let error = error {
-                    self.log("ERROR: \(error.message)");
-                }
-
-                if(error == nil){
-                    self.log("data0: \(data0)");
-                    self.log("data1: \(data1)");
-                }
-
-                XCTAssert(error == nil, "error is not nil")
+                XCTAssert(error == nil, "error is nil")
                 XCTAssert(data0 == 0, "data0 is 0")
                 XCTAssert(data1 == 10.21, "data1 is 10.21")
 
@@ -203,9 +116,8 @@ class dry_api_client_testingTests: XCTestCase {
             });
         });
     }
-    */
 
-    func testEchoAnArranAndADictionary(){
+    func testEcho_2_2_Array_Dictionary(){
         var client = DryApiClient(apiUrl);
 
         var a = ["zero", "one"];
@@ -214,20 +126,7 @@ class dry_api_client_testingTests: XCTestCase {
         self.asyncTest({ (done) in
             client.call("test.echo", a, h, { (error, data0: NSArray?, data1: NSDictionary?) in
 
-                if let error = error {
-                    self.log("ERROR: \(error.message)");
-                }
-
-                if(error == nil){
-                    self.log("data0: \(data0)");
-                    self.log("data1: \(data1)");
-                }
-
-                // let data0 = NSMutableArray(array: data0!);
-                // data0.addObject("hello");
-                // self.log("data0: \(data0)");
-
-                XCTAssert(error == nil, "error is not nil")
+                XCTAssert(error == nil, "error is nil")
                 XCTAssert(data0 == a, "data0 is \(a)")
                 XCTAssert(data1 == h, "data1 is \(h)")
 
@@ -236,8 +135,7 @@ class dry_api_client_testingTests: XCTestCase {
         });
     }
 
-    /*
-    func testCall_2_3(){
+    func testEcho_2_3(){
         var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
@@ -251,8 +149,7 @@ class dry_api_client_testingTests: XCTestCase {
         });
     }
 
-
-    func testCall00(){
+    func testEcho_0_0(){
         var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
@@ -263,10 +160,7 @@ class dry_api_client_testingTests: XCTestCase {
         });
     }
 
-    */
-
-    /*
-    func testCall01(){
+    func testEcho_0_1(){
         var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
@@ -277,79 +171,4 @@ class dry_api_client_testingTests: XCTestCase {
             });
         });
     }
-    */
-
-    /*
-    func testCallTripleGood(){
-        var client = DryApiClient(apiUrl);
-
-        self.asyncTest({ (done) in
-            client.callSimple("test", { (error: DryApiError?, data0: String?, data1: String?, data2: String?) in
-
-
-                if let error = error {
-                    self.log("ERROR: \(error)");
-                }
-
-                if(error == nil){
-                    self.log("data0: \(data0)");
-                    self.log("data1: \(data1)");
-                    self.log("data2: \(data2)");
-                }
-
-                XCTAssert(error == nil, "error is not nil")
-                XCTAssert(data0 != nil, "data0 is not nil")
-                XCTAssert(data1 == nil, "data1 is nil")
-                XCTAssert(data2 == nil, "data2 is nil")
-
-                done();
-            });
-        });
-    }
-
-    */
-
-
-
-
-    /*
-    func testCall(){
-        var client = DryApiClient("http://localhost:9998/api");
-        // client.callTwoStrings();
-
-        client.call("test", { (error: NSDictionary?, data: String?) in
-
-            if let error = error {
-                println("ERROR: \(error)");
-                return
-            }
-
-            if(data != nil){
-                println("Data: \(data)");
-            }
-        });
-
-        client.call("test", { (error: NSDictionary?, data: Int?) in
-
-            if let error = error {
-                return println("ERROR: \(error)");
-            }
-
-            if(data != nil){
-                println("Data: \(data)");
-            }
-        });
-    }
-    */
- 
-    
-    /*
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measureBlock() {
-            // Put the code you want to measure the time of here.
-        }
-    }
-    */
-    
 }

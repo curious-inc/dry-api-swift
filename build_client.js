@@ -201,11 +201,11 @@ function main(){
 
     var hash = make_methods_hash();
 
-    var parent_file = _.fs.readFile.sync("./lib/DryApiClientParent.swift");
+    var base_file = _.fs.readFile.sync("./lib/DryApiClientBase.swift");
 
     var client_file = _.fs.renderFile.sync("./templates/DryApiClient.swift.hb", hash);
 
-    var client_code = parent_file + "\n" + client_file;
+    var client_code = base_file + "\n" + client_file;
 
     _.fs.writeFile.sync("./lib/DryApiClient.swift", client_code);
 }

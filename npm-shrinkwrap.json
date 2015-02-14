@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "dependencies": {
     "dry-underscore": {
-      "version": "0.11.1",
-      "from": "dry-underscore@",
+      "version": "0.11.2",
+      "from": "dry-underscore@0.11.2",
       "dependencies": {
         "tamejs": {
           "version": "0.4.14",

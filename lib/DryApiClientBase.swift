@@ -1,7 +1,7 @@
 
 import Foundation;
 
-public class DryApiError {
+public class DryApiError: NSObject {
 
     public let code: String;
     public let message: String;
@@ -25,13 +25,19 @@ public class DryApiError {
             self.message = message;
         }else{ self.message = "no_message"; }
     }
+
+    func description() -> String {
+        return("code: \(self.code) message: \(self.message)");
+    }
 }
 
-class DryApiClientParent {
+public class DryApiClientBase {
 
     var _endpoint = "";
     
-    let debug = true;
+    public var debug = false;
+
+    public let null = NSNull();
 
     init(_ endpoint: String){
         _endpoint = endpoint;
@@ -194,29 +200,3 @@ class DryApiClientParent {
     }
 }
 
-    /*
-    func titlesFromJSON(data: NSData) -> [String] {
-        var titles = [String]()
-        var jsonError: NSError?
-        
-        if let json = NSJSONSerialization.JSONObjectWithData(data, options: nil, error: &jsonError) as? NSDictionary {
-            if let feed = json["feed"] as? NSDictionary {
-                if let entries = feed["entry"] as? NSArray {
-                    for entry in entries {
-                        if let name = entry["im:name"] as? NSDictionary {
-                            if let label = name["label"] as? String {
-                                titles.append(label)
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            if let unwrappedError = jsonError {
-                println("json error: \(unwrappedError)")
-            }
-        }
-        
-        return titles
-    }
-    */
