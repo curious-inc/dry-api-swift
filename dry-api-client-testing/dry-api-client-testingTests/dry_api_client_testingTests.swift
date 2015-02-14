@@ -236,6 +236,7 @@ class dry_api_client_testingTests: XCTestCase {
         });
     }
 
+    /*
     func testCall_2_3(){
         var client = DryApiClient(apiUrl);
 
@@ -251,7 +252,6 @@ class dry_api_client_testingTests: XCTestCase {
     }
 
 
-    /*
     func testCall00(){
         var client = DryApiClient(apiUrl);
 
