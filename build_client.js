@@ -180,26 +180,22 @@ function make_method(in_args, out_args){
     return(method);
 }
 
-function make_methods_hash(){
+function make_methods_hash(args_in, args_out){
 
     var methods = [];
-    var max_in = 11;
-    var max_out = 11;
 
-    _.for(max_in, function(i){
-        _.for(max_out, function(o){
+    _.for(args_in + 1, function(i){
+        _.for(args_out + 1, function(o){
             methods.push(make_method(i, o));
         });
     });
 
-    // methods = [make_method(2, 2)];
-   
     return({ methods: methods });
 }
 
-function main(){
+function make_client(args_in, args_out, out_path){
 
-    var hash = make_methods_hash();
+    var hash = make_methods_hash(args_in, args_out);
 
     var base_file = _.fs.readFile.sync("./lib/DryApiClientBase.swift");
 
@@ -207,7 +203,12 @@ function main(){
 
     var client_code = base_file + "\n" + client_file;
 
-    _.fs.writeFile.sync("./lib/DryApiClient.swift", client_code);
+    _.fs.writeFile.sync(out_path, client_code);
+}
+
+function main(){
+    make_client(10, 10, "./lib/DryApiClient.swift");
+    make_client(3, 3, "./lib/DryApiClient.small.swift");
 }
 
 main();
