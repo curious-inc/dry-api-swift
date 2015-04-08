@@ -57,13 +57,49 @@ class dry_api_client_testingTests: XCTestCase {
         });
     }
 
+    func testTagsMatch(){
+        var client = DryApiClient(apiUrl);
+
+        XCTAssert(client.tags().count == 0);
+        XCTAssert(client.tags("no_val") == nil);
+        XCTAssert(client.tags("key_one", "val_one").tags("key_one")! == "val_one");
+        XCTAssert(client.tags("key_one")! == "val_one");
+        client.tags("key_two", "val_two")
+
+        self.asyncTest({ (done) in
+            client.call("test.tags", [ "key_one": "val_one", "key_two": "val_two" ], { (error, matchesTags: Bool?) in
+
+                XCTAssert(error == nil, "error is nil")
+                XCTAssert(matchesTags! == true, "tags match")
+
+                done();
+            });
+        });
+    }
+
+    func testNoTagsMatch(){
+        var client = DryApiClient(apiUrl);
+
+        XCTAssert(client.tags().count == 0);
+
+        self.asyncTest({ (done) in
+            client.call("test.tags", [ "key_one": "val_one" ], { (error, matchesTags: Bool?) in
+
+                XCTAssert(error == nil, "error is nil")
+                XCTAssert(matchesTags! == false, "tags don't match")
+
+                done();
+            });
+        });
+    }
+ 
     func testEcho_0_2(){
         var client = DryApiClient(apiUrl);
 
         self.asyncTest({ (done) in
             client.call("test.echo", { (error, data0: String?, data1: String?) in
 
-                XCTAssert(error == nil, "error is not nil")
+                XCTAssert(error == nil, "error is nil")
                 XCTAssert(data0 == nil, "data0 is nil")
                 XCTAssert(data1 == nil, "data1 is nil")
 
@@ -154,7 +190,7 @@ class dry_api_client_testingTests: XCTestCase {
 
         self.asyncTest({ (done) in
             client.call("test.echo", { (error) in
-                XCTAssert(error == nil, "error is not nil")
+                XCTAssert(error == nil, "error is nil")
                 done();
             });
         });

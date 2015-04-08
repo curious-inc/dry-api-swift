@@ -72,6 +72,7 @@ function make_outgoing_message(body, in_args, out_args){
     body.in(4);
     body.add_line('"id": NSUUID().UUIDString,');
     body.add_line('"method": methodName,');
+    body.add_line('"tags": self.tags(),');
 
     var params = [];
     _.for(in_args, function(i){

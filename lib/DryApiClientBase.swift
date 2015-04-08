@@ -43,6 +43,21 @@ public class DryApiClientBase {
         _endpoint = endpoint;
     }
 
+    var _tags = NSMutableDictionary();
+
+    func tags() -> NSDictionary {
+        return(_tags.copy() as NSDictionary);
+    }
+
+    func tags(key: String) -> String? {
+        return(_tags[key] as String?);
+    }
+
+    func tags(key: String, _ val: String) -> DryApiClientBase {
+        _tags[key] = val;
+        return (self);
+    }
+
     func postRequest(url: String, _ data: NSData, _ callback: ((error: DryApiError?, data: NSData?)->())){
         var configuration = NSURLSessionConfiguration.defaultSessionConfiguration();
         var session = NSURLSession(configuration: configuration);
