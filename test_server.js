@@ -10,8 +10,14 @@ var test_server = require('dry-api').test_server;
 var config = _.extend(test_server.config, {
     port: 9998,
     url: "/api",
-    host: "http://localhost"
+    host: "https://localhost",
+    tls: {
+        key_path: "./keys/test.key",
+        cert_path: "./keys/test.cert",
+        bundle_path: ""
+    }
 });
+
 
 var api_manager = test_server.api_manager;
 var api_hash = api_manager.hash(true);

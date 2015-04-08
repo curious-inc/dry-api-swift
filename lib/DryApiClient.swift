@@ -31,7 +31,7 @@ public class DryApiError: NSObject {
     }
 }
 
-public class DryApiClientBase {
+public class DryApiClientBase : NSObject, NSURLSessionDelegate {
 
     var _endpoint = "";
     
@@ -58,9 +58,33 @@ public class DryApiClientBase {
         return (self);
     }
 
+    var _unsafeDomains: Array<String> = [];
+
+    func addUnsafeDomain(domain: String) {
+        _unsafeDomains.append(domain);
+    }
+
+    func URLSession(session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: ((NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> ())){
+        if(challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust){
+            // println("https circumvent test host: \(challenge.protectionSpace.host)");
+            if(find(_unsafeDomains, challenge.protectionSpace.host) != nil){
+                let credential: NSURLCredential = NSURLCredential(trust: challenge.protectionSpace.serverTrust);
+                completionHandler(.UseCredential, credential);
+            }else{
+                completionHandler(.CancelAuthenticationChallenge, nil);
+            }
+        }
+    }
+
     func postRequest(url: String, _ data: NSData, _ callback: ((error: DryApiError?, data: NSData?)->())){
         var configuration = NSURLSessionConfiguration.defaultSessionConfiguration();
-        var session = NSURLSession(configuration: configuration);
+        var session: NSURLSession!;
+
+        if(_unsafeDomains.count > 0){
+            session = NSURLSession(configuration: configuration, delegate: self, delegateQueue: nil);
+        }else{
+            session = NSURLSession(configuration: configuration);
+        }
 
         // request.setValue("text/plain", forHTTPHeaderField: "Content-Type")
 
