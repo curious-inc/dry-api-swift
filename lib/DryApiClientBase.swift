@@ -77,7 +77,8 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
     }
 
     func postRequest(url: String, _ data: NSData, _ callback: ((error: DryApiError?, data: NSData?)->())){
-        var configuration = NSURLSessionConfiguration.defaultSessionConfiguration();
+        var configuration = NSURLSessionConfiguration.ephemeralSessionConfiguration();
+        configuration.HTTPCookieAcceptPolicy = NSHTTPCookieAcceptPolicy.Never
         var session: NSURLSession!;
 
         if(_unsafeDomains.count > 0){
