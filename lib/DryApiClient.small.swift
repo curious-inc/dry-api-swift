@@ -11,22 +11,26 @@ public class DryApiError: NSObject {
         self.message = message;
     }
 
-    init(_ error: NSError){
-        self.code = "NSError.\(error.code)";
-        self.message = error.localizedDescription;
+    class func withError(error: NSError) -> DryApiError {
+        return(DryApiError("NSError.\(error.code)", error.localizedDescription));
     }
 
-    init(_ error: NSDictionary){
-        if let code = error["code"] as? NSString {
-            self.code = code;
-        }else{ self.code = "no_code"; }
+    class func withDictionary(dictionary: NSDictionary) -> DryApiError {
+        var code = "no_code";
+        var message = "no_message";
 
-        if let message = error["message"] as? NSString {
-            self.message = message;
-        }else{ self.message = "no_message"; }
+        if let c = dictionary["code"] as? NSString {
+            code = c as String;
+        }
+
+        if let m = dictionary["message"] as? NSString {
+            message = m as String;
+        }
+
+        return(DryApiError(code, message));
     }
 
-    func description() -> String {
+    public override var description: String {
         return("code: \(self.code) message: \(self.message)");
     }
 }
@@ -46,11 +50,11 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
     var _tags = NSMutableDictionary();
 
     func tags() -> NSDictionary {
-        return(_tags.copy() as NSDictionary);
+        return(_tags.copy() as! NSDictionary);
     }
 
     func tags(key: String) -> String? {
-        return(_tags[key] as String?);
+        return(_tags[key] as! String?);
     }
 
     func tags(key: String, _ val: String) -> DryApiClientBase {
@@ -64,11 +68,15 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
         _unsafeDomains.append(domain);
     }
 
-    func URLSession(session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: ((NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> ())){
+// Objective-C method 'URLSession:didReceiveChallenge:completionHandler:' provided by method 'URLSession(_:didReceiveChallenge:completionHandler:)' conflicts with optional requirement method 'URLSession(_:didReceiveChallenge:completionHandler:)' in protocol 'NSURLSessionDelegate'
+    // optional func URLSession(_ session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: ((NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> ())){
+    public func URLSession(session: NSURLSession, 
+                           didReceiveChallenge challenge: NSURLAuthenticationChallenge, 
+                           completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential!) -> Void) {
         if(challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust){
             // println("https circumvent test host: \(challenge.protectionSpace.host)");
             if(find(_unsafeDomains, challenge.protectionSpace.host) != nil){
-                let credential: NSURLCredential = NSURLCredential(trust: challenge.protectionSpace.serverTrust);
+                var credential: NSURLCredential = NSURLCredential(trust: challenge.protectionSpace.serverTrust);
                 completionHandler(.UseCredential, credential);
             }else{
                 completionHandler(.CancelAuthenticationChallenge, nil);
@@ -94,9 +102,9 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
         request.HTTPMethod = "POST";
         request.HTTPBody = data;
 
-        let task = session.dataTaskWithRequest(request, { (data, response, error) in
+        let task = session.dataTaskWithRequest(request, completionHandler: { (data, response, error) in
 
-            if(error != nil){ return callback(error: DryApiError(error), data: nil); }
+            if(error != nil){ return callback(error: DryApiError.withError(error), data: nil); }
 
             if let response = response as? NSHTTPURLResponse {
                 if response.statusCode != 200 {
@@ -111,18 +119,17 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
         task.resume()
     }
 
-    func dataToString(data: NSData) -> String{
-        if let string = NSString(data: data, encoding: NSUTF8StringEncoding) {
-            return(string);
-        }else{ return(""); }
-    }
-
-    func postRequest(url: String, _ data: String, _ callback: ((error: DryApiError?, data: NSData?)->())){
+    func postRequestWithString(url: String, _ data: String, _ callback: ((error: DryApiError?, data: NSData?)->())){
         return postRequest(url, data.dataUsingEncoding(NSUTF8StringEncoding)!, callback);
     }
 
+    func dataToString(data: NSData) -> String{
+        if let string = NSString(data: data, encoding: NSUTF8StringEncoding) {
+            return(string as String);
+        }else{ return(""); }
+    }
 
-    func responseToArgs(data: NSData?, callback: ((error: DryApiError?, args: [AnyObject?]?)->())){
+    func responseToArgs(data: NSData?, _ callback: ((error: DryApiError?, args: [AnyObject?]?)->())){
 
         var args: [AnyObject?] = [];
         
@@ -145,11 +152,12 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
                 let error:AnyObject? = response["error"];
 
                 if(!(error is NSNull)){
-                    if let error = error as NSDictionary? {
-                        return callback(error: DryApiError(error), args: nil);
-                    }else{
-                        return callback(error: DryApiError("no_code", "object: \(error)"), args: nil);
+                    if let error = error as? NSDictionary? {
+                        if let error = error {
+                            return callback(error: DryApiError.withDictionary(error), args: nil);
+                        }
                     }
+                    return callback(error: DryApiError("no_code", "object: \(error)"), args: nil);
                 }
 
                 for key in params {
@@ -174,12 +182,12 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
         });
     }
 
-    func parse(data: NSData, callback: ((error: DryApiError?, response: NSDictionary?)->())){
+    func parse(data: NSData, _ callback: ((error: DryApiError?, response: NSDictionary?)->())){
         var jsonError: NSError? = nil; 
         var result = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.allZeros, error: &jsonError) as? NSDictionary
 
         if(result != nil){ callback(error: nil, response: result); }
-        else{ callback(error: DryApiError(jsonError!), response: nil); }
+        else{ callback(error: DryApiError.withError(jsonError!), response: nil); }
     }
 
     func dataify(value: AnyObject, _ callback: ((error: DryApiError?, response: NSData?)->())){
@@ -187,7 +195,7 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
         if let data = NSJSONSerialization.dataWithJSONObject(value, options: nil, error: &jsonError) {
             callback(error: nil, response: data);
         }else{
-            callback(error: DryApiError(jsonError!), response: nil);
+            callback(error: DryApiError.withError(jsonError!), response: nil);
         }
     }
 
@@ -196,7 +204,7 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
         if NSJSONSerialization.isValidJSONObject(value) {
             if let data = NSJSONSerialization.dataWithJSONObject(value, options: nil, error: nil) {
                 if let string = NSString(data: data, encoding: NSUTF8StringEncoding) {
-                    return string
+                    return string as String;
                 }
             }
         }
@@ -217,7 +225,7 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
         }
     }
 
-    func callEndpointGetArgs(outgoingMessage: NSDictionary, callback: ((error: DryApiError?, args: [AnyObject?]?)->())){
+    func callEndpointGetArgs(outgoingMessage: NSDictionary, _ callback: ((error: DryApiError?, args: [AnyObject?]?)->())){
         self.dataify(outgoingMessage, { (error, data) in 
             if(error != nil){ return callback(error: error, args: nil); }
 
@@ -245,7 +253,7 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
 public class DryApiClient : DryApiClientBase {
 
 
-    func call(methodName: String, callback: ((error: DryApiError?)->()))    {
+    func call(methodName: String, _ callback: ((error: DryApiError?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -270,7 +278,7 @@ public class DryApiClient : DryApiClientBase {
 
 
 
-    func call<OA>(methodName: String, callback: ((error: DryApiError?, outArg0: OA?)->()))    {
+    func call<OA>(methodName: String, _ callback: ((error: DryApiError?, outArg0: OA?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -293,13 +301,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[0] != nil && ((args[0] as? OA) == nil)){
                 return errorOut(0, args[0]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?);
+            return callback(error: nil, outArg0: args[0] as! OA?);
         });
     }
 
 
 
-    func call<OA, OB>(methodName: String, callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?)->()))    {
+    func call<OA, OB>(methodName: String, _ callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -326,13 +334,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[1] != nil && ((args[1] as? OB) == nil)){
                 return errorOut(1, args[1]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?, outArg1: args[1] as OB?);
+            return callback(error: nil, outArg0: args[0] as! OA?, outArg1: args[1] as! OB?);
         });
     }
 
 
 
-    func call<OA, OB, OC>(methodName: String, callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?, outArg2: OC?)->()))    {
+    func call<OA, OB, OC>(methodName: String, _ callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?, outArg2: OC?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -363,13 +371,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[2] != nil && ((args[2] as? OC) == nil)){
                 return errorOut(2, args[2]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?, outArg1: args[1] as OB?, outArg2: args[2] as OC?);
+            return callback(error: nil, outArg0: args[0] as! OA?, outArg1: args[1] as! OB?, outArg2: args[2] as! OC?);
         });
     }
 
 
 
-    func call<IA: NSObject>(methodName: String, _ inArg0: IA, callback: ((error: DryApiError?)->()))    {
+    func call<IA: NSObject>(methodName: String, _ inArg0: IA, _ callback: ((error: DryApiError?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -395,7 +403,7 @@ public class DryApiClient : DryApiClientBase {
 
 
 
-    func call<IA: NSObject, OA>(methodName: String, _ inArg0: IA, callback: ((error: DryApiError?, outArg0: OA?)->()))    {
+    func call<IA: NSObject, OA>(methodName: String, _ inArg0: IA, _ callback: ((error: DryApiError?, outArg0: OA?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -419,13 +427,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[0] != nil && ((args[0] as? OA) == nil)){
                 return errorOut(0, args[0]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?);
+            return callback(error: nil, outArg0: args[0] as! OA?);
         });
     }
 
 
 
-    func call<IA: NSObject, OA, OB>(methodName: String, _ inArg0: IA, callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?)->()))    {
+    func call<IA: NSObject, OA, OB>(methodName: String, _ inArg0: IA, _ callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -453,13 +461,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[1] != nil && ((args[1] as? OB) == nil)){
                 return errorOut(1, args[1]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?, outArg1: args[1] as OB?);
+            return callback(error: nil, outArg0: args[0] as! OA?, outArg1: args[1] as! OB?);
         });
     }
 
 
 
-    func call<IA: NSObject, OA, OB, OC>(methodName: String, _ inArg0: IA, callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?, outArg2: OC?)->()))    {
+    func call<IA: NSObject, OA, OB, OC>(methodName: String, _ inArg0: IA, _ callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?, outArg2: OC?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -491,13 +499,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[2] != nil && ((args[2] as? OC) == nil)){
                 return errorOut(2, args[2]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?, outArg1: args[1] as OB?, outArg2: args[2] as OC?);
+            return callback(error: nil, outArg0: args[0] as! OA?, outArg1: args[1] as! OB?, outArg2: args[2] as! OC?);
         });
     }
 
 
 
-    func call<IA: NSObject, IB: NSObject>(methodName: String, _ inArg0: IA, _ inArg1: IB, callback: ((error: DryApiError?)->()))    {
+    func call<IA: NSObject, IB: NSObject>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ callback: ((error: DryApiError?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -524,7 +532,7 @@ public class DryApiClient : DryApiClientBase {
 
 
 
-    func call<IA: NSObject, IB: NSObject, OA>(methodName: String, _ inArg0: IA, _ inArg1: IB, callback: ((error: DryApiError?, outArg0: OA?)->()))    {
+    func call<IA: NSObject, IB: NSObject, OA>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ callback: ((error: DryApiError?, outArg0: OA?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -549,13 +557,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[0] != nil && ((args[0] as? OA) == nil)){
                 return errorOut(0, args[0]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?);
+            return callback(error: nil, outArg0: args[0] as! OA?);
         });
     }
 
 
 
-    func call<IA: NSObject, IB: NSObject, OA, OB>(methodName: String, _ inArg0: IA, _ inArg1: IB, callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?)->()))    {
+    func call<IA: NSObject, IB: NSObject, OA, OB>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -584,13 +592,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[1] != nil && ((args[1] as? OB) == nil)){
                 return errorOut(1, args[1]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?, outArg1: args[1] as OB?);
+            return callback(error: nil, outArg0: args[0] as! OA?, outArg1: args[1] as! OB?);
         });
     }
 
 
 
-    func call<IA: NSObject, IB: NSObject, OA, OB, OC>(methodName: String, _ inArg0: IA, _ inArg1: IB, callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?, outArg2: OC?)->()))    {
+    func call<IA: NSObject, IB: NSObject, OA, OB, OC>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?, outArg2: OC?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -623,13 +631,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[2] != nil && ((args[2] as? OC) == nil)){
                 return errorOut(2, args[2]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?, outArg1: args[1] as OB?, outArg2: args[2] as OC?);
+            return callback(error: nil, outArg0: args[0] as! OA?, outArg1: args[1] as! OB?, outArg2: args[2] as! OC?);
         });
     }
 
 
 
-    func call<IA: NSObject, IB: NSObject, IC: NSObject>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ inArg2: IC, callback: ((error: DryApiError?)->()))    {
+    func call<IA: NSObject, IB: NSObject, IC: NSObject>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ inArg2: IC, _ callback: ((error: DryApiError?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -657,7 +665,7 @@ public class DryApiClient : DryApiClientBase {
 
 
 
-    func call<IA: NSObject, IB: NSObject, IC: NSObject, OA>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ inArg2: IC, callback: ((error: DryApiError?, outArg0: OA?)->()))    {
+    func call<IA: NSObject, IB: NSObject, IC: NSObject, OA>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ inArg2: IC, _ callback: ((error: DryApiError?, outArg0: OA?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -683,13 +691,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[0] != nil && ((args[0] as? OA) == nil)){
                 return errorOut(0, args[0]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?);
+            return callback(error: nil, outArg0: args[0] as! OA?);
         });
     }
 
 
 
-    func call<IA: NSObject, IB: NSObject, IC: NSObject, OA, OB>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ inArg2: IC, callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?)->()))    {
+    func call<IA: NSObject, IB: NSObject, IC: NSObject, OA, OB>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ inArg2: IC, _ callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -719,13 +727,13 @@ public class DryApiClient : DryApiClientBase {
             if(args[1] != nil && ((args[1] as? OB) == nil)){
                 return errorOut(1, args[1]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?, outArg1: args[1] as OB?);
+            return callback(error: nil, outArg0: args[0] as! OA?, outArg1: args[1] as! OB?);
         });
     }
 
 
 
-    func call<IA: NSObject, IB: NSObject, IC: NSObject, OA, OB, OC>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ inArg2: IC, callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?, outArg2: OC?)->()))    {
+    func call<IA: NSObject, IB: NSObject, IC: NSObject, OA, OB, OC>(methodName: String, _ inArg0: IA, _ inArg1: IB, _ inArg2: IC, _ callback: ((error: DryApiError?, outArg0: OA?, outArg1: OB?, outArg2: OC?)->()))    {
         var outgoingMessage: NSMutableDictionary = [
             "id": NSUUID().UUIDString,
             "method": methodName,
@@ -759,7 +767,7 @@ public class DryApiClient : DryApiClientBase {
             if(args[2] != nil && ((args[2] as? OC) == nil)){
                 return errorOut(2, args[2]);
             }
-            return callback(error: nil, outArg0: args[0] as OA?, outArg1: args[1] as OB?, outArg2: args[2] as OC?);
+            return callback(error: nil, outArg0: args[0] as! OA?, outArg1: args[1] as! OB?, outArg2: args[2] as! OC?);
         });
     }
 

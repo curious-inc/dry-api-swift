@@ -14,12 +14,11 @@ class dry_api_client_testingTests: XCTestCase {
     func asyncTest(method: ((done: ()->())->())) {
         var expectation = self.expectationWithDescription("async expectation");
 
-        method({
+        method(done: {
             expectation.fulfill();
         });
 
-        self.waitForExpectationsWithTimeout(2, handler:{ (error: NSError!) in
-        });
+        self.waitForExpectationsWithTimeout(2, handler:{ (error: NSError!) in });
     }
 
     func log(str: NSString){
@@ -51,7 +50,7 @@ class dry_api_client_testingTests: XCTestCase {
         var client = makeClient();
 
         self.asyncTest({ (done) in
-            client.postRequest(self.apiUrl, "", { (error: DryApiError?, data: NSData?) in
+            client.postRequestWithString(self.apiUrl, "", { (error: DryApiError?, data: NSData?) in
                 XCTAssert(error == nil, "No error received")
                 XCTAssert(data != nil, "Data received")
 

@@ -44,7 +44,7 @@ function parameter_signature(in_args, out_args){
         sig += ", _ inArg" + i + ": " + in_arg_generic_type(i);
     });
 
-    sig += ", callback: ((error: DryApiError?";
+    sig += ", _ callback: ((error: DryApiError?";
 
     _.for(out_args, function(i){
         sig += ", outArg" + i + ": " + out_arg_generic_type(i) + "?";
@@ -108,7 +108,7 @@ function make_callback_call(in_args, out_args){
     var call = "return callback(error: nil";
 
     _.for(out_args, function(i){
-        call += ", outArg" + i + ": args[" + i + "] as " + out_arg_generic_type(i) + "?" ;
+        call += ", outArg" + i + ": args[" + i + "] as! " + out_arg_generic_type(i) + "?" ;
     });
 
     call += ");";
