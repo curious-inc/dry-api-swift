@@ -68,8 +68,6 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
         _unsafeDomains.append(domain);
     }
 
-// Objective-C method 'URLSession:didReceiveChallenge:completionHandler:' provided by method 'URLSession(_:didReceiveChallenge:completionHandler:)' conflicts with optional requirement method 'URLSession(_:didReceiveChallenge:completionHandler:)' in protocol 'NSURLSessionDelegate'
-    // optional func URLSession(_ session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: ((NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> ())){
     public func URLSession(session: NSURLSession, 
                            didReceiveChallenge challenge: NSURLAuthenticationChallenge, 
                            completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential!) -> Void) {
@@ -84,23 +82,33 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
         }
     }
 
-    func postRequest(url: String, _ data: NSData, _ callback: ((error: DryApiError?, data: NSData?)->())){
+    var _session: NSURLSession?;
+
+    func session() -> NSURLSession {
+
+        if(_session != nil){ return(_session!); }
+
         var configuration = NSURLSessionConfiguration.ephemeralSessionConfiguration();
         configuration.HTTPCookieAcceptPolicy = NSHTTPCookieAcceptPolicy.Never
-        var session: NSURLSession!;
 
         if(_unsafeDomains.count > 0){
-            session = NSURLSession(configuration: configuration, delegate: self, delegateQueue: nil);
+            _session = NSURLSession(configuration: configuration, delegate: self, delegateQueue: nil);
         }else{
-            session = NSURLSession(configuration: configuration);
+            _session = NSURLSession(configuration: configuration);
         }
 
-        // request.setValue("text/plain", forHTTPHeaderField: "Content-Type")
+        return(_session!);
+    }
+
+    func postRequest(url: String, _ data: NSData, _ callback: ((error: DryApiError?, data: NSData?)->())){
+        let session = self.session();
 
         let nsurl = NSURL(string: url);
         let request = NSMutableURLRequest(URL: nsurl!);
         request.HTTPMethod = "POST";
         request.HTTPBody = data;
+
+        // request.setValue("text/plain", forHTTPHeaderField: "Content-Type")
 
         let task = session.dataTaskWithRequest(request, completionHandler: { (data, response, error) in
 
