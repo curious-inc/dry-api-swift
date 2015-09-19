@@ -157,6 +157,8 @@
 		EE5ED1E01A8C692A00C5E716 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastSwiftMigration = 0700;
+				LastSwiftUpdateCheck = 0700;
 				LastUpgradeCheck = 0610;
 				ORGANIZATIONNAME = "Curious Inc.";
 				TargetAttributes = {
@@ -399,6 +401,7 @@
 				EE5ED2091A8C692A00C5E716 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		EE5ED20A1A8C692A00C5E716 /* Build configuration list for PBXNativeTarget "dry-api-client-testingTests" */ = {
 			isa = XCConfigurationList;
@@ -407,6 +410,7 @@
 				EE5ED20C1A8C692A00C5E716 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

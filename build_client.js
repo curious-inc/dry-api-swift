@@ -135,7 +135,7 @@ function make_method_body(in_args, out_args){
     body.add_line();
 
 
-    body.add_line("func errorOut(i: Int, e: AnyObject?){");
+    body.add_line("func errorOut(i: Int, _ e: AnyObject?){");
     body.in(4);
     
     body.add_line("let error = self.badSignatureError(i, e);");

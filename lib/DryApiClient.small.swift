@@ -35,7 +35,7 @@ public class DryApiError: NSObject {
     }
 }
 
-public class DryApiClientBase : NSObject, NSURLSessionDelegate {
+public class DryApiClientBase : NSObject, NSURLSessionDelegate, NSURLSessionTaskDelegate {
 
     var _endpoint = "";
     
@@ -67,14 +67,12 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
     func addUnsafeDomain(domain: String) {
         _unsafeDomains.append(domain);
     }
-
-    public func URLSession(session: NSURLSession, 
-                           didReceiveChallenge challenge: NSURLAuthenticationChallenge, 
-                           completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential!) -> Void) {
+    
+    public func URLSession(_ session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> Void) {
         if(challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust){
-            // println("https circumvent test host: \(challenge.protectionSpace.host)");
-            if(find(_unsafeDomains, challenge.protectionSpace.host) != nil){
-                var credential: NSURLCredential = NSURLCredential(trust: challenge.protectionSpace.serverTrust);
+            // print("https circumvent test host: \(challenge.protectionSpace.host)");
+            if(_unsafeDomains.indexOf(challenge.protectionSpace.host) != nil){
+                var credential: NSURLCredential = NSURLCredential(trust: challenge.protectionSpace.serverTrust!);
                 completionHandler(.UseCredential, credential);
             }else{
                 completionHandler(.CancelAuthenticationChallenge, nil);
@@ -112,7 +110,7 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
 
         let task = session.dataTaskWithRequest(request, completionHandler: { (data, response, error) in
 
-            if(error != nil){ return callback(error: DryApiError.withError(error), data: nil); }
+            if(error != nil){ return callback(error: DryApiError.withError(error!), data: nil); }
 
             if let response = response as? NSHTTPURLResponse {
                 if response.statusCode != 200 {
@@ -151,8 +149,8 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
             let response = response!
 
             if(self.debug){ 
-                println("reponse json: \(response)");
-                println("reponse string: \(self.dataToString(data))");
+                print("reponse json: \(response)");
+                print("reponse string: \(self.dataToString(data))");
             }
 
             if let params = response["params"] as? NSArray {
@@ -181,7 +179,7 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
                     }
                 }
 
-                if(self.debug){ println("processed args: \(args)"); }
+                if(self.debug){ print("processed args: \(args)"); }
                 return callback(error: nil, args: args);
 
             }else{
@@ -191,32 +189,25 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
     }
 
     func parse(data: NSData, _ callback: ((error: DryApiError?, response: NSDictionary?)->())){
-        var jsonError: NSError? = nil; 
-        var result = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.allZeros, error: &jsonError) as? NSDictionary
 
-        if(result != nil){ callback(error: nil, response: result); }
-        else{ callback(error: DryApiError.withError(jsonError!), response: nil); }
+        do {
+            // let result = try NSJSONSerialization.JSONObjectWithData(data, options:NSJSONReadingOptions(rawValue: 0)) as? NSDictionary
+            let result = try NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions()) as? NSDictionary
+            callback(error: nil, response: result);
+        } catch let error as NSError {
+            callback(error: DryApiError.withError(error), response: nil); 
+        }
+
+        // var result = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.allZeros, error: &jsonError) as? NSDictionary
     }
 
     func dataify(value: AnyObject, _ callback: ((error: DryApiError?, response: NSData?)->())){
-        var jsonError: NSError? = nil; 
-        if let data = NSJSONSerialization.dataWithJSONObject(value, options: nil, error: &jsonError) {
+        do {
+            let data = try NSJSONSerialization.dataWithJSONObject(value, options: NSJSONWritingOptions()) 
             callback(error: nil, response: data);
-        }else{
-            callback(error: DryApiError.withError(jsonError!), response: nil);
+        } catch let error as NSError {
+            callback(error: DryApiError.withError(error), response: nil); 
         }
-    }
-
-    func stringify(value: AnyObject, _ prettyPrinted: Bool = false) -> String {
-        var options = prettyPrinted ? NSJSONWritingOptions.PrettyPrinted : nil
-        if NSJSONSerialization.isValidJSONObject(value) {
-            if let data = NSJSONSerialization.dataWithJSONObject(value, options: nil, error: nil) {
-                if let string = NSString(data: data, encoding: NSUTF8StringEncoding) {
-                    return string as String;
-                }
-            }
-        }
-        return ""
     }
 
     func getValue(dict: [String: AnyObject?], _ key: String) -> AnyObject? {
@@ -228,7 +219,7 @@ public class DryApiClientBase : NSObject, NSURLSessionDelegate {
     func logOutgoingMessage(data: NSData?){
         if let data = data {
             if let str = NSString(data: data, encoding: NSUTF8StringEncoding) {
-                println("outgoingMessage data(string): \(str)");
+                print("outgoingMessage data(string): \(str)");
             }
         }
     }
@@ -273,7 +264,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error);
             }
@@ -298,7 +289,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil);
             }
@@ -327,7 +318,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil, outArg1: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil, outArg1: nil);
             }
@@ -360,7 +351,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil, outArg1: nil, outArg2: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil, outArg1: nil, outArg2: nil);
             }
@@ -398,7 +389,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error);
             }
@@ -424,7 +415,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil);
             }
@@ -454,7 +445,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil, outArg1: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil, outArg1: nil);
             }
@@ -488,7 +479,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil, outArg1: nil, outArg2: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil, outArg1: nil, outArg2: nil);
             }
@@ -527,7 +518,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error);
             }
@@ -554,7 +545,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil);
             }
@@ -585,7 +576,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil, outArg1: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil, outArg1: nil);
             }
@@ -620,7 +611,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil, outArg1: nil, outArg2: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil, outArg1: nil, outArg2: nil);
             }
@@ -660,7 +651,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error);
             }
@@ -688,7 +679,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil);
             }
@@ -720,7 +711,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil, outArg1: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil, outArg1: nil);
             }
@@ -756,7 +747,7 @@ public class DryApiClient : DryApiClientBase {
                 return callback(error: error, outArg0: nil, outArg1: nil, outArg2: nil);
             }
             
-            func errorOut(i: Int, e: AnyObject?){
+            func errorOut(i: Int, _ e: AnyObject?){
                 let error = self.badSignatureError(i, e);
                 return callback(error: error, outArg0: nil, outArg1: nil, outArg2: nil);
             }

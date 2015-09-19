@@ -12,19 +12,19 @@ import XCTest
 class dry_api_client_testingTests: XCTestCase {
     
     func asyncTest(method: ((done: ()->())->())) {
-        var expectation = self.expectationWithDescription("async expectation");
+        let expectation = self.expectationWithDescription("async expectation");
 
         method(done: {
             expectation.fulfill();
         });
 
-        self.waitForExpectationsWithTimeout(2, handler:{ (error: NSError!) in });
+        self.waitForExpectationsWithTimeout(20, handler:{ (error: NSError?) in });
     }
 
     func log(str: NSString){
-        println("log: ");
-        println("log: \(str)");
-        println("log: ");
+        print("log: ");
+        print("log: \(str)");
+        print("log: ");
     }
 
     override func setUp() {
@@ -40,14 +40,27 @@ class dry_api_client_testingTests: XCTestCase {
     let apiUrl = "https://localhost:9998/api";
 
     func makeClient() -> DryApiClient {
-        var client = DryApiClient(apiUrl);
+        let client = DryApiClient(apiUrl);
         client.addUnsafeDomain("localhost");
         return(client);
     }
 
+    func testConnectionError(){
+
+        let client = DryApiClient("https://noserver:100000");
+
+        self.asyncTest({ (done) in
+            client.postRequestWithString(self.apiUrl, "", { (error: DryApiError?, data: NSData?) in
+                XCTAssert(error != nil, "error received")
+                XCTAssert(data == nil, "no data received")
+                done();
+            });
+        });
+    }
+
     func testServer(){
 
-        var client = makeClient();
+        let client = makeClient();
 
         self.asyncTest({ (done) in
             client.postRequestWithString(self.apiUrl, "", { (error: DryApiError?, data: NSData?) in
@@ -64,7 +77,7 @@ class dry_api_client_testingTests: XCTestCase {
 
     func testTagsMatch(){
 
-        var client = makeClient();
+        let client = makeClient();
 
         XCTAssert(client.tags().count == 0);
         XCTAssert(client.tags("no_val") == nil);
@@ -85,7 +98,7 @@ class dry_api_client_testingTests: XCTestCase {
 
     func testNoTagsMatch(){
 
-        var client = makeClient();
+        let client = makeClient();
 
         XCTAssert(client.tags().count == 0);
 
@@ -102,7 +115,7 @@ class dry_api_client_testingTests: XCTestCase {
  
     func testEcho_0_2(){
 
-        var client = makeClient();
+        let client = makeClient();
 
         self.asyncTest({ (done) in
             client.call("test.echo", { (error, data0: String?, data1: String?) in
@@ -118,7 +131,7 @@ class dry_api_client_testingTests: XCTestCase {
     
     func testEcho_2_2_String_Null(){
 
-        var client = makeClient();
+        let client = makeClient();
 
         self.asyncTest({ (done) in
             client.call("test.echo", "zero", client.null, { (error, data0: String?, data1: String?) in
@@ -134,7 +147,7 @@ class dry_api_client_testingTests: XCTestCase {
 
     func testEcho_2_2_String_String(){
 
-        var client = makeClient();
+        let client = makeClient();
 
         self.asyncTest({ (done) in
             client.call("test.echo", "zero", "one", { (error, data0: String?, data1: String?) in
@@ -150,7 +163,7 @@ class dry_api_client_testingTests: XCTestCase {
 
     func testEcho_2_2_Int_Double(){
 
-        var client = makeClient();
+        let client = makeClient();
 
         self.asyncTest({ (done) in
             client.call("test.echo", 0, 10.21, { (error, data0: Int?, data1: Double?) in
@@ -166,10 +179,10 @@ class dry_api_client_testingTests: XCTestCase {
 
     func testEcho_2_2_Array_Dictionary(){
 
-        var client = makeClient();
+        let client = makeClient();
 
-        var a = ["zero", "one"];
-        var h = ["zero": 0, "one": 1];
+        let a = ["zero", "one"];
+        let h = ["zero": 0, "one": 1];
 
         self.asyncTest({ (done) in
             client.call("test.echo", a, h, { (error, data0: NSArray?, data1: NSDictionary?) in
@@ -185,7 +198,7 @@ class dry_api_client_testingTests: XCTestCase {
 
     func testEcho_2_3(){
 
-        var client = makeClient();
+        let client = makeClient();
 
         self.asyncTest({ (done) in
             client.call("test.echo", "a", "b", { (error, a: String?, b: String?, c: String?) in
@@ -200,7 +213,7 @@ class dry_api_client_testingTests: XCTestCase {
 
     func testEcho_0_0(){
         
-        var client = makeClient();
+        let client = makeClient();
 
         self.asyncTest({ (done) in
             client.call("test.echo", { (error) in
@@ -212,7 +225,7 @@ class dry_api_client_testingTests: XCTestCase {
 
     func testEcho_0_1(){
         
-        var client = makeClient();
+        let client = makeClient();
 
         self.asyncTest({ (done) in
             client.call("test.echo", { (error, arg0: String?) in

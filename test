@@ -1,3 +1,6 @@
 #!/bin/bash
 ./build_client.js
-cd dry-api-client-testing && xcodebuild test -project dry-api-client-testing.xcodeproj -scheme dry-api-client-testing -destination platform="iOS Simulator,name=iPhone 6,OS=8.2"
+cd dry-api-client-testing && \
+xcodebuild test -project dry-api-client-testing.xcodeproj -scheme dry-api-client-testing -destination platform="iOS Simulator,name=iPhone 6,OS=8.4" && \
+xcodebuild test -project dry-api-client-testing.xcodeproj -scheme dry-api-client-testing -destination platform="iOS Simulator,name=iPhone 6,OS=9.0" && \
+cd ..

@@ -19,8 +19,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         let vc = ViewController();
 
-        var mainFrame = UIScreen.mainScreen().bounds;
-        var windowFrame = mainFrame;
+        let mainFrame = UIScreen.mainScreen().bounds;
+        let windowFrame = mainFrame;
         self.window = UIWindow(frame: windowFrame);
 
         if let window = window {
